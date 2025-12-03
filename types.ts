@@ -1,5 +1,6 @@
 export interface CalendarEvent {
   id: string;
+  userId?: string; // Added for Firebase ownership
   date: string; // Format YYYY-MM-DD
   title: string;
   type: 'holiday' | 'personal';

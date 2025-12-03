@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CalendarEvent, DayInfo } from '../types';
-import { HOLIDAYS_2026, WEEKDAYS, MONTH_NAMES } from '../constants';
+import { getHolidays, WEEKDAYS, MONTH_NAMES } from '../constants';
 
 interface CalendarProps {
   year: number;
@@ -16,6 +16,7 @@ const Calendar: React.FC<CalendarProps> = ({
   year, month, events, onMonthChange, onDayClick, onEventClick, headerRightContent
 }) => {
   const [calendarDays, setCalendarDays] = useState<DayInfo[]>([]);
+  const holidays = useMemo(() => getHolidays(year), [year]);
 
   useEffect(() => {
     const getCalendarDays = (): DayInfo[] => {
@@ -85,7 +86,7 @@ const Calendar: React.FC<CalendarProps> = ({
   const daysWithEvents = useMemo(() => {
     return calendarDays.map(day => {
       // Find holiday
-      const holiday = HOLIDAYS_2026.find(h => h.date === day.dateString);
+      const holiday = holidays.find(h => h.date === day.dateString);
       // Find personal events
       const dayEvents = events.filter(e => e.date === day.dateString);
       
@@ -95,12 +96,12 @@ const Calendar: React.FC<CalendarProps> = ({
         events: dayEvents
       };
     });
-  }, [calendarDays, events]);
+  }, [calendarDays, events, holidays]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-white overflow-hidden print-full">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-200">
+      <div className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-200 no-print">
         <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 flex items-baseline gap-3">
           <span>{year}년</span>
           <span className="text-indigo-600">{MONTH_NAMES[month]}</span>
@@ -142,6 +143,13 @@ const Calendar: React.FC<CalendarProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Print Header (Only visible when printing) */}
+      <div className="hidden print:flex px-4 py-2 justify-center items-center border-b border-slate-300">
+        <h1 className="text-3xl font-extrabold text-slate-900">
+          {year}년 {MONTH_NAMES[month]}
+        </h1>
+      </div>
 
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
@@ -158,7 +166,7 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 grid-rows-6 flex-1 bg-slate-100/50">
+      <div className="grid grid-cols-7 grid-rows-6 flex-1 bg-slate-100/50 print:bg-white">
         {daysWithEvents.map((day, idx) => {
           const isSunday = day.date.getDay() === 0;
           const isSaturday = day.date.getDay() === 6;
@@ -169,16 +177,16 @@ const Calendar: React.FC<CalendarProps> = ({
               key={day.dateString + idx}
               onClick={() => onDayClick(day.dateString)}
               className={`
-                p-2 border-b border-r border-slate-200 cursor-pointer transition-colors relative group
-                ${!day.isCurrentMonth ? 'bg-slate-50 text-slate-300' : 'bg-white hover:bg-blue-50/30'}
-                ${day.isToday ? 'bg-blue-50/50' : ''}
+                p-2 border-b border-r border-slate-200 cursor-pointer transition-colors relative group print:border-slate-300
+                ${!day.isCurrentMonth ? 'bg-slate-50 text-slate-300 print:bg-transparent' : 'bg-white hover:bg-blue-50/30'}
+                ${day.isToday ? 'bg-blue-50/50 print:bg-transparent' : ''}
               `}
             >
               {/* Date Number */}
               <div className="flex justify-between items-start">
                 <span className={`
                   text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full
-                  ${day.isToday ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : ''}
+                  ${day.isToday ? 'bg-blue-600 text-white shadow-md shadow-blue-200 print:bg-transparent print:text-black print:shadow-none print:border print:border-black' : ''}
                   ${!day.isToday && isRedDay ? 'text-red-500' : ''}
                   ${!day.isToday && isSaturday && !day.holiday ? 'text-blue-500' : ''}
                   ${!day.isToday && !isRedDay && !isSaturday ? 'text-slate-700' : ''}
@@ -189,14 +197,14 @@ const Calendar: React.FC<CalendarProps> = ({
                 
                 {/* Holiday Label */}
                 {day.holiday && (
-                   <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate max-w-[70%] text-right bg-red-50 px-1.5 py-0.5 rounded">
+                   <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate max-w-[70%] text-right bg-red-50 px-1.5 py-0.5 rounded print:bg-transparent print:p-0">
                      {day.holiday.title}
                    </span>
                 )}
               </div>
 
               {/* Events List */}
-              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-24px)] no-scrollbar">
+              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-24px)] no-scrollbar print:max-h-none print:overflow-visible">
                 {day.events.map(event => (
                   <div 
                     key={event.id}
@@ -205,15 +213,16 @@ const Calendar: React.FC<CalendarProps> = ({
                       text-[10px] sm:text-xs px-2 py-1 rounded-md border truncate font-medium
                       transition-all hover:scale-[1.02] active:scale-95 shadow-sm
                       ${event.color || 'bg-slate-100 text-slate-700 border-slate-200'}
+                      print:bg-transparent print:border-0 print:px-0 print:text-black print:shadow-none
                     `}
                   >
-                    {event.title}
+                    • {event.title}
                   </div>
                 ))}
               </div>
               
               {/* Add Button Indicator on Hover */}
-              <div className="hidden md:flex absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="hidden md:flex absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity no-print">
                 <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
                   +
                 </div>
