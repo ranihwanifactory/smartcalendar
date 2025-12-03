@@ -9,10 +9,11 @@ interface CalendarProps {
   onMonthChange: (increment: number) => void;
   onDayClick: (dateStr: string) => void;
   onEventClick: (event: CalendarEvent) => void;
+  headerRightContent?: React.ReactNode;
 }
 
 const Calendar: React.FC<CalendarProps> = ({ 
-  year, month, events, onMonthChange, onDayClick, onEventClick 
+  year, month, events, onMonthChange, onDayClick, onEventClick, headerRightContent
 }) => {
   const [calendarDays, setCalendarDays] = useState<DayInfo[]>([]);
 
@@ -97,37 +98,53 @@ const Calendar: React.FC<CalendarProps> = ({
   }, [calendarDays, events]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+    <div className="w-full h-full flex flex-col bg-white overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-6 flex items-center justify-between bg-white border-b border-slate-100">
-        <h1 className="text-3xl font-extrabold text-slate-900 flex items-baseline gap-3">
+      <div className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-200">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 flex items-baseline gap-3">
           <span>{year}년</span>
           <span className="text-indigo-600">{MONTH_NAMES[month]}</span>
         </h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => onMonthChange(-1)} 
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600"
-            aria-label="Previous Month"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button 
-            onClick={() => onMonthChange(1)} 
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-600"
-            aria-label="Next Month"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+        
+        <div className="flex items-center gap-4">
+          {headerRightContent && (
+            <div className="hidden md:block">
+              {headerRightContent}
+            </div>
+          )}
+          
+          <div className="flex gap-1 border border-slate-200 rounded-lg p-1 bg-slate-50">
+            <button 
+              onClick={() => onMonthChange(-1)} 
+              className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+              aria-label="Previous Month"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button 
+              onClick={() => onMonthChange(1)} 
+              className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+              aria-label="Next Month"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile AI Button (If passed) */}
+          {headerRightContent && (
+            <div className="md:hidden">
+              {headerRightContent}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Weekday Headers */}
-      <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/50">
+      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
         {WEEKDAYS.map((day, idx) => (
           <div 
             key={day} 
@@ -141,7 +158,7 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 grid-rows-6 flex-1 bg-slate-50">
+      <div className="grid grid-cols-7 grid-rows-6 flex-1 bg-slate-100/50">
         {daysWithEvents.map((day, idx) => {
           const isSunday = day.date.getDay() === 0;
           const isSaturday = day.date.getDay() === 6;
@@ -152,9 +169,9 @@ const Calendar: React.FC<CalendarProps> = ({
               key={day.dateString + idx}
               onClick={() => onDayClick(day.dateString)}
               className={`
-                min-h-[100px] sm:min-h-[120px] p-2 border-b border-r border-slate-100 cursor-pointer transition-colors relative group
-                ${!day.isCurrentMonth ? 'bg-slate-50/30 text-slate-300' : 'bg-white hover:bg-slate-50'}
-                ${day.isToday ? 'bg-blue-50/30' : ''}
+                p-2 border-b border-r border-slate-200 cursor-pointer transition-colors relative group
+                ${!day.isCurrentMonth ? 'bg-slate-50 text-slate-300' : 'bg-white hover:bg-blue-50/30'}
+                ${day.isToday ? 'bg-blue-50/50' : ''}
               `}
             >
               {/* Date Number */}
@@ -179,7 +196,7 @@ const Calendar: React.FC<CalendarProps> = ({
               </div>
 
               {/* Events List */}
-              <div className="mt-1 space-y-1 overflow-y-auto max-h-[80px] no-scrollbar">
+              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-24px)] no-scrollbar">
                 {day.events.map(event => (
                   <div 
                     key={event.id}
@@ -196,7 +213,7 @@ const Calendar: React.FC<CalendarProps> = ({
               </div>
               
               {/* Add Button Indicator on Hover */}
-              <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="hidden md:flex absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
                   +
                 </div>

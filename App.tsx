@@ -76,43 +76,35 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-900 font-sans">
+    <div className="h-screen w-screen bg-white flex overflow-hidden relative">
       
-      {/* Main Content Area */}
-      <main className="flex-1 p-4 md:p-8 h-screen overflow-hidden flex flex-col relative z-10 transition-all duration-300 ease-in-out" style={{ marginRight: isAIOpen ? '384px' : '0' }}>
-        
-        {/* Top Bar */}
-        <div className="flex justify-between items-center mb-6">
-           <div>
-             <h2 className="text-xl font-medium text-slate-500">Welcome back</h2>
-             <p className="text-sm text-slate-400">2026년 일정을 계획해보세요</p>
-           </div>
-           
-           <button 
+      {/* Main Content Area - Full Screen */}
+      <main 
+        className="flex-1 h-full flex flex-col relative z-10 transition-all duration-300 ease-in-out" 
+        style={{ marginRight: isAIOpen ? '384px' : '0' }}
+      >
+        <Calendar 
+          year={year}
+          month={month}
+          events={personalEvents}
+          onMonthChange={handleMonthChange}
+          onDayClick={handleDayClick}
+          onEventClick={handleEventClick}
+          headerRightContent={
+            <button 
              onClick={() => setIsAIOpen(!isAIOpen)}
              className={`
-               flex items-center gap-2 px-5 py-2.5 rounded-full font-semibold shadow-lg transition-all
+               flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm font-semibold transition-all
                ${isAIOpen 
-                 ? 'bg-slate-800 text-white ring-2 ring-indigo-500 ring-offset-2' 
-                 : 'bg-white text-slate-700 hover:bg-slate-50 ring-1 ring-slate-200'}
+                 ? 'bg-slate-800 text-white shadow-md' 
+                 : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}
              `}
            >
-             <span className="text-xl">✨</span>
-             <span>AI 비서 {isAIOpen ? '닫기' : '열기'}</span>
+             <span className="text-lg">✨</span>
+             <span className="hidden sm:inline">AI 비서</span>
            </button>
-        </div>
-
-        {/* Calendar Container */}
-        <div className="flex-1 overflow-hidden relative">
-          <Calendar 
-            year={year}
-            month={month}
-            events={personalEvents}
-            onMonthChange={handleMonthChange}
-            onDayClick={handleDayClick}
-            onEventClick={handleEventClick}
-          />
-        </div>
+          }
+        />
       </main>
 
       {/* AI Sidebar */}
