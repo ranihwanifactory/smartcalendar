@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { CalendarEvent, DayInfo } from '../types';
+import { CalendarEvent, DayInfo, WeatherInfo } from '../types';
 import { getHolidays, WEEKDAYS, MONTH_NAMES } from '../constants';
+import { getCurrentLocation, fetchWeatherForecast } from '../services/weatherService';
 
 interface CalendarProps {
   year: number;
@@ -16,7 +17,22 @@ const Calendar: React.FC<CalendarProps> = ({
   year, month, events, onMonthChange, onDayClick, onEventClick, headerRightContent
 }) => {
   const [calendarDays, setCalendarDays] = useState<DayInfo[]>([]);
+  const [weatherData, setWeatherData] = useState<Record<string, WeatherInfo>>({});
   const holidays = useMemo(() => getHolidays(year), [year]);
+
+  // Fetch Weather on Mount
+  useEffect(() => {
+    const initWeather = async () => {
+      try {
+        const { lat, lon } = await getCurrentLocation();
+        const forecast = await fetchWeatherForecast(lat, lon);
+        setWeatherData(forecast);
+      } catch (e) {
+        console.log("Weather location permission denied or error:", e);
+      }
+    };
+    initWeather();
+  }, []);
 
   useEffect(() => {
     const getCalendarDays = (): DayInfo[] => {
@@ -89,14 +105,17 @@ const Calendar: React.FC<CalendarProps> = ({
       const holiday = holidays.find(h => h.date === day.dateString);
       // Find personal events
       const dayEvents = events.filter(e => e.date === day.dateString);
+      // Find weather
+      const weather = weatherData[day.dateString];
       
       return {
         ...day,
         holiday,
+        weather,
         events: dayEvents
       };
     });
-  }, [calendarDays, events, holidays]);
+  }, [calendarDays, events, holidays, weatherData]);
 
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden print-full">
@@ -182,8 +201,8 @@ const Calendar: React.FC<CalendarProps> = ({
                 ${day.isToday ? 'bg-blue-50/50 print:bg-transparent' : ''}
               `}
             >
-              {/* Date Number */}
-              <div className="flex justify-between items-start">
+              {/* Date Header Row (Number + Holiday + Weather) */}
+              <div className="flex justify-between items-start mb-1">
                 <span className={`
                   text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full
                   ${day.isToday ? 'bg-blue-600 text-white shadow-md shadow-blue-200 print:bg-transparent print:text-black print:shadow-none print:border print:border-black' : ''}
@@ -195,16 +214,27 @@ const Calendar: React.FC<CalendarProps> = ({
                   {day.date.getDate()}
                 </span>
                 
-                {/* Holiday Label */}
-                {day.holiday && (
-                   <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate max-w-[70%] text-right bg-red-50 px-1.5 py-0.5 rounded print:bg-transparent print:p-0">
-                     {day.holiday.title}
-                   </span>
-                )}
+                <div className="flex flex-col items-end gap-0.5 max-w-[70%]">
+                  {/* Holiday Label */}
+                  {day.holiday && (
+                     <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate text-right bg-red-50 px-1.5 py-0.5 rounded print:bg-transparent print:p-0">
+                       {day.holiday.title}
+                     </span>
+                  )}
+                  {/* Weather Info (Only if available) */}
+                  {day.weather && (
+                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-600 bg-white/50 rounded px-1" title={`${day.weather.minTemp}°C / ${day.weather.maxTemp}°C`}>
+                      <span>{day.weather.icon}</span>
+                      <span className="font-medium hidden sm:inline">
+                        {Math.round(day.weather.maxTemp)}°
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Events List */}
-              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-24px)] no-scrollbar print:max-h-none print:overflow-visible">
+              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-32px)] no-scrollbar print:max-h-none print:overflow-visible">
                 {day.events.map(event => (
                   <div 
                     key={event.id}

@@ -8,6 +8,13 @@ export interface CalendarEvent {
   description?: string;
 }
 
+export interface WeatherInfo {
+  maxTemp: number;
+  minTemp: number;
+  weatherCode: number;
+  icon: string;
+}
+
 export interface DayInfo {
   date: Date;
   dateString: string;
@@ -15,6 +22,7 @@ export interface DayInfo {
   isToday: boolean;
   events: CalendarEvent[];
   holiday?: CalendarEvent;
+  weather?: WeatherInfo;
 }
 
 export type ViewMode = 'month' | 'year';
