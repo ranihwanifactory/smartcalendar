@@ -1,15 +1,19 @@
-const CACHE_NAME = 'smart-calendar-v3';
+const CACHE_NAME = 'smart-calendar-v4';
 const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json'
+  '/',
+  '/index.html',
+  '/manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        return cache.addAll(urlsToCache);
+        // Use {cache: 'reload'} to ensure we get fresh files from server during install
+        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
+      })
+      .catch((err) => {
+        console.error('Failed to cache files during install:', err);
       })
   );
   self.skipWaiting();
@@ -31,39 +35,34 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 1. Cross-Origin Requests (CDNs, Firebase):
-  // Let the browser handle these directly. Do not involve the Service Worker.
-  // This prevents CORS errors from breaking the app.
+  // 1. Cross-Origin Requests: Let browser handle them.
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
   // 2. Navigation Requests (HTML pages):
-  // Network First, then Fallback to Cache.
-  // This ensures the user gets the latest version if online, but the app still opens if offline/failed.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       (async () => {
         try {
-          // Try network first
+          // Network First
           return await fetch(event.request);
         } catch (error) {
-          // If network fails, try to serve the cached index.html
+          // Fallback to cache
           const cache = await caches.open(CACHE_NAME);
-          // Check for './index.html' first, then try './' (root)
-          let cachedResponse = await cache.match('./index.html');
-          if (!cachedResponse) {
-            cachedResponse = await cache.match('./');
+          const cachedResponse = await cache.match('/index.html');
+          if (cachedResponse) {
+             return cachedResponse;
           }
-          return cachedResponse;
+          // If index.html is missing in cache, try root
+          return await cache.match('/') || Response.error();
         }
       })()
     );
     return;
   }
 
-  // 3. Asset Requests (Local JS, CSS, Images):
-  // Cache First, then Network.
+  // 3. Asset Requests: Cache First, then Network
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
