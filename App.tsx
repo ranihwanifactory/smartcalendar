@@ -17,6 +17,7 @@ const App: React.FC = () => {
   // Calendar State
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
+  const [direction, setDirection] = useState<'left' | 'right' | 'none'>('none');
   
   // Events State
   const [personalEvents, setPersonalEvents] = useState<CalendarEvent[]>([]);
@@ -109,6 +110,11 @@ const App: React.FC = () => {
       newYear -= 1;
     }
 
+    // Set animation direction: 
+    // If increment > 0 (Next), new slide comes from Right.
+    // If increment < 0 (Prev), new slide comes from Left.
+    setDirection(increment > 0 ? 'right' : 'left');
+
     setMonth(newMonth);
     setYear(newYear);
   };
@@ -174,6 +180,30 @@ const App: React.FC = () => {
     window.print();
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: '2026 스마트 달력',
+      text: '대한민국 공휴일과 날씨, AI 비서가 함께하는 2026년 스마트 달력을 확인해보세요!',
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        console.log('Share canceled or failed:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('주소가 클립보드에 복사되었습니다. 친구들에게 공유해보세요!');
+      } catch (err) {
+        console.error('Clipboard copy failed:', err);
+        alert('공유하기를 지원하지 않는 브라우저입니다.');
+      }
+    }
+  };
+
   if (isAuthLoading) {
     return <div className="h-screen w-screen flex items-center justify-center bg-slate-50">Loading...</div>;
   }
@@ -189,6 +219,7 @@ const App: React.FC = () => {
           year={year}
           month={month}
           events={personalEvents}
+          direction={direction}
           onMonthChange={handleMonthChange}
           onDayClick={handleDayClick}
           onEventClick={handleEventClick}
@@ -206,6 +237,16 @@ const App: React.FC = () => {
                    <span className="hidden sm:inline">설치</span>
                  </button>
                )}
+
+               <button
+                onClick={handleShare}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                title="공유하기"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
 
                <button
                 onClick={handlePrint}
