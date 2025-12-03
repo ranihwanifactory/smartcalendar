@@ -120,23 +120,19 @@ const Calendar: React.FC<CalendarProps> = ({
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden print-full">
       {/* Header */}
-      <div className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-200 no-print">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 flex items-baseline gap-3">
-          <span>{year}년</span>
-          <span className="text-indigo-600">{MONTH_NAMES[month]}</span>
-        </h1>
+      <div className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row items-center justify-between bg-white border-b border-slate-200 no-print gap-3 md:gap-0">
         
-        <div className="flex items-center gap-4">
-          {headerRightContent && (
-            <div className="hidden md:block">
-              {headerRightContent}
-            </div>
-          )}
-          
+        {/* Title and Nav - Mobile: Centered/Spaced, Desktop: Left aligned */}
+        <div className="flex items-center justify-between w-full md:w-auto md:gap-6">
+          <h1 className="text-xl md:text-3xl font-extrabold text-slate-900 flex items-baseline gap-2 md:gap-3 whitespace-nowrap">
+            <span>{year}년</span>
+            <span className="text-indigo-600">{MONTH_NAMES[month]}</span>
+          </h1>
+
           <div className="flex gap-1 border border-slate-200 rounded-lg p-1 bg-slate-50">
             <button 
               onClick={() => onMonthChange(-1)} 
-              className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+              className="p-1.5 md:p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
               aria-label="Previous Month"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,7 +141,7 @@ const Calendar: React.FC<CalendarProps> = ({
             </button>
             <button 
               onClick={() => onMonthChange(1)} 
-              className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
+              className="p-1.5 md:p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-slate-600"
               aria-label="Next Month"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,13 +149,11 @@ const Calendar: React.FC<CalendarProps> = ({
               </svg>
             </button>
           </div>
-
-          {/* Mobile AI Button (If passed) */}
-          {headerRightContent && (
-            <div className="md:hidden">
-              {headerRightContent}
-            </div>
-          )}
+        </div>
+        
+        {/* Right Content Buttons */}
+        <div className="w-full md:w-auto flex justify-end">
+          {headerRightContent}
         </div>
       </div>
       
@@ -175,7 +169,7 @@ const Calendar: React.FC<CalendarProps> = ({
         {WEEKDAYS.map((day, idx) => (
           <div 
             key={day} 
-            className={`py-3 text-center text-sm font-semibold ${
+            className={`py-2 md:py-3 text-center text-xs md:text-sm font-semibold ${
               idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-slate-500'
             }`}
           >
@@ -196,15 +190,15 @@ const Calendar: React.FC<CalendarProps> = ({
               key={day.dateString + idx}
               onClick={() => onDayClick(day.dateString)}
               className={`
-                p-2 border-b border-r border-slate-200 cursor-pointer transition-colors relative group print:border-slate-300
+                p-1 md:p-2 border-b border-r border-slate-200 cursor-pointer transition-colors relative group print:border-slate-300
                 ${!day.isCurrentMonth ? 'bg-slate-50 text-slate-300 print:bg-transparent' : 'bg-white hover:bg-blue-50/30'}
                 ${day.isToday ? 'bg-blue-50/50 print:bg-transparent' : ''}
               `}
             >
               {/* Date Header Row (Number + Holiday + Weather) */}
-              <div className="flex justify-between items-start mb-1">
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-0.5 sm:mb-1 gap-0.5">
                 <span className={`
-                  text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full
+                  text-xs md:text-sm font-medium w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full flex-shrink-0
                   ${day.isToday ? 'bg-blue-600 text-white shadow-md shadow-blue-200 print:bg-transparent print:text-black print:shadow-none print:border print:border-black' : ''}
                   ${!day.isToday && isRedDay ? 'text-red-500' : ''}
                   ${!day.isToday && isSaturday && !day.holiday ? 'text-blue-500' : ''}
@@ -214,18 +208,18 @@ const Calendar: React.FC<CalendarProps> = ({
                   {day.date.getDate()}
                 </span>
                 
-                <div className="flex flex-col items-end gap-0.5 max-w-[70%]">
+                <div className="flex flex-col items-start sm:items-end w-full sm:w-auto gap-0.5 overflow-hidden">
                   {/* Holiday Label */}
                   {day.holiday && (
-                     <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate text-right bg-red-50 px-1.5 py-0.5 rounded print:bg-transparent print:p-0">
+                     <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate w-full sm:w-auto sm:max-w-[80px] text-left sm:text-right bg-red-50 px-1 py-0.5 rounded print:bg-transparent print:p-0 leading-tight">
                        {day.holiday.title}
                      </span>
                   )}
                   {/* Weather Info (Only if available) */}
                   {day.weather && (
-                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-slate-600 bg-white/50 rounded px-1" title={`${day.weather.minTemp}°C / ${day.weather.maxTemp}°C`}>
+                    <div className="flex items-center gap-0.5 text-[10px] text-slate-600 bg-white/50 rounded px-1" title={`${day.weather.minTemp}°C / ${day.weather.maxTemp}°C`}>
                       <span>{day.weather.icon}</span>
-                      <span className="font-medium hidden sm:inline">
+                      <span className="font-medium hidden md:inline">
                         {Math.round(day.weather.maxTemp)}°
                       </span>
                     </div>
@@ -234,13 +228,13 @@ const Calendar: React.FC<CalendarProps> = ({
               </div>
 
               {/* Events List */}
-              <div className="mt-1 space-y-1 overflow-y-auto max-h-[calc(100%-32px)] no-scrollbar print:max-h-none print:overflow-visible">
+              <div className="space-y-0.5 md:space-y-1 overflow-y-auto max-h-[calc(100%-28px)] md:max-h-[calc(100%-32px)] no-scrollbar print:max-h-none print:overflow-visible">
                 {day.events.map(event => (
                   <div 
                     key={event.id}
                     onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
                     className={`
-                      text-[10px] sm:text-xs px-2 py-1 rounded-md border truncate font-medium
+                      text-[9px] md:text-[10px] lg:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded-md border truncate font-medium
                       transition-all hover:scale-[1.02] active:scale-95 shadow-sm
                       ${event.color || 'bg-slate-100 text-slate-700 border-slate-200'}
                       print:bg-transparent print:border-0 print:px-0 print:text-black print:shadow-none

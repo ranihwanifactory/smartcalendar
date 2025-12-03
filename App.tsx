@@ -183,8 +183,7 @@ const App: React.FC = () => {
       
       {/* Main Content Area */}
       <main 
-        className="flex-1 h-full flex flex-col relative z-10 transition-all duration-300 ease-in-out" 
-        style={{ marginRight: isAIOpen ? '384px' : '0' }}
+        className={`flex-1 h-full flex flex-col relative z-10 transition-all duration-300 ease-in-out ${isAIOpen ? 'md:mr-96' : ''}`}
       >
         <Calendar 
           year={year}
@@ -194,17 +193,17 @@ const App: React.FC = () => {
           onDayClick={handleDayClick}
           onEventClick={handleEventClick}
           headerRightContent={
-            <div className="flex items-center gap-2 no-print">
+            <div className="flex items-center gap-2 no-print flex-wrap justify-end whitespace-nowrap">
                {isInstallable && (
                  <button
                    onClick={handleInstallClick}
-                   className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
+                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
                    title="앱 설치"
                  >
                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                    </svg>
-                   <span>설치</span>
+                   <span className="hidden sm:inline">설치</span>
                  </button>
                )}
 
@@ -221,14 +220,14 @@ const App: React.FC = () => {
               {!user ? (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                 >
                   로그인
                 </button>
               ) : (
                 <button
                   onClick={() => signOut(auth)}
-                  className="px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                  className="px-3 py-1.5 md:px-4 md:py-2 text-sm font-semibold bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors whitespace-nowrap"
                 >
                   로그아웃
                 </button>
@@ -237,7 +236,7 @@ const App: React.FC = () => {
               <button 
                 onClick={() => setIsAIOpen(!isAIOpen)}
                 className={`
-                  flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm font-semibold transition-all
+                  flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap
                   ${isAIOpen 
                     ? 'bg-slate-800 text-white shadow-md' 
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}
