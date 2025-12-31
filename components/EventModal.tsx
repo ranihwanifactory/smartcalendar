@@ -17,6 +17,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [colorIdx, setColorIdx] = useState(0);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -25,10 +26,12 @@ const EventModal: React.FC<EventModalProps> = ({
         setDescription(existingEvent.description || '');
         const idx = EVENT_COLORS.findIndex(c => c.value === existingEvent.color);
         setColorIdx(idx >= 0 ? idx : 0);
+        setCompleted(existingEvent.completed || false);
       } else {
         setTitle('');
         setDescription('');
         setColorIdx(0);
+        setCompleted(false);
       }
     }
   }, [isOpen, existingEvent]);
@@ -46,8 +49,33 @@ const EventModal: React.FC<EventModalProps> = ({
       description,
       type: 'personal',
       color: EVENT_COLORS[colorIdx].value,
+      completed: completed,
     });
     onClose();
+  };
+
+  const handleShareEvent = async () => {
+    const statusText = completed ? '[완료]' : '[진행중]';
+    const text = `${statusText} 일정 안내\n날짜: ${selectedDate}\n제목: ${title}${description ? `\n설명: ${description}` : ''}\n\n2026 스마트 달력에서 확인하세요!`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `일정 공유: ${title}`,
+          text: text,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.log('Error sharing', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('일정 내용이 클립보드에 복사되었습니다.');
+      } catch (err) {
+        alert('공유 기능을 지원하지 않는 브라우저입니다.');
+      }
+    }
   };
 
   return (
@@ -57,17 +85,50 @@ const EventModal: React.FC<EventModalProps> = ({
           <h3 className="text-lg font-bold text-slate-800">
             {existingEvent ? '일정 수정' : '새 일정 추가'}
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {existingEvent && (
+              <button 
+                type="button" 
+                onClick={handleShareEvent}
+                className="p-2 text-slate-500 hover:text-blue-600 transition-colors"
+                title="일정 공유"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+            )}
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">날짜</label>
-            <div className="text-slate-900 font-semibold">{selectedDate}</div>
+          <div className="flex justify-between items-end">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">날짜</label>
+              <div className="text-slate-900 font-semibold">{selectedDate}</div>
+            </div>
+            {existingEvent && (
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative">
+                  <input 
+                    type="checkbox" 
+                    checked={completed}
+                    onChange={(e) => setCompleted(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-10 h-5 rounded-full transition-colors ${completed ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${completed ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                </div>
+                <span className={`text-sm font-medium ${completed ? 'text-green-600' : 'text-slate-500'}`}>
+                  {completed ? '완료됨' : '진행중'}
+                </span>
+              </label>
+            )}
           </div>
 
           <div>

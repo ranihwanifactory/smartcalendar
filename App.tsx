@@ -29,6 +29,9 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
 
+  // Notification State
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
@@ -42,12 +45,17 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Check Notification Permission on Mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
   // PWA Install Listener
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
@@ -59,27 +67,7 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    
-    // Show the install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-    
-    // We've used the prompt, and can't use it again, throw it away
-    setDeferredPrompt(null);
-    setIsInstallable(false);
-  };
-
-  // Fetch Events from Firestore
+  // Fetch Events from Firestore & Check for Notifications
   useEffect(() => {
     if (!user) {
       setPersonalEvents([]);
@@ -93,10 +81,86 @@ const App: React.FC = () => {
         ...doc.data()
       } as CalendarEvent));
       setPersonalEvents(eventsData);
+      
+      // Trigger notification check after events are loaded
+      checkAndNotifyUpcomingEvents(eventsData);
     });
 
     return () => unsubscribe();
   }, [user]);
+
+  // Helper: Request Notification Permission
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('이 브라우저는 알림을 지원하지 않습니다.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission === 'granted') {
+      // Test notification
+      new Notification('알림이 설정되었습니다.', {
+        body: '내일 일정이 있으면 하루 전에 알려드릴게요!',
+        icon: 'https://cdn-icons-png.flaticon.com/512/10691/10691802.png'
+      });
+      // Check immediately after granting
+      checkAndNotifyUpcomingEvents(personalEvents);
+    }
+  };
+
+  // Helper: Check for events tomorrow and notify
+  const checkAndNotifyUpcomingEvents = (events: CalendarEvent[]) => {
+    if (Notification.permission !== 'granted') return;
+
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const y = tomorrow.getFullYear();
+    const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const d = String(tomorrow.getDate()).padStart(2, '0');
+    const tomorrowStr = `${y}-${m}-${d}`;
+
+    // Check if we already notified for this specific date today to avoid spamming on reload
+    const storageKey = `notified_for_${tomorrowStr}`;
+    const alreadyNotified = localStorage.getItem(storageKey);
+
+    if (alreadyNotified === 'true') {
+      return; 
+    }
+
+    const upcomingEvents = events.filter(e => e.date === tomorrowStr && e.type === 'personal');
+
+    if (upcomingEvents.length > 0) {
+      const title = upcomingEvents.length === 1 
+        ? `내일 일정 알림: ${upcomingEvents[0].title}`
+        : `내일 ${upcomingEvents.length}개의 일정이 있습니다.`;
+      
+      const body = upcomingEvents.map(e => `- ${e.title}`).join('\n');
+
+      new Notification(title, {
+        body: body,
+        icon: 'https://cdn-icons-png.flaticon.com/512/10691/10691802.png',
+        tag: 'upcoming-event' // Prevent stacking multiple notifications
+      });
+
+      // Mark as notified for this date
+      localStorage.setItem(storageKey, 'true');
+    }
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      console.log('User accepted the install prompt');
+    }
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   const handleMonthChange = (increment: number) => {
     let newMonth = month + increment;
@@ -110,11 +174,7 @@ const App: React.FC = () => {
       newYear -= 1;
     }
 
-    // Set animation direction: 
-    // If increment > 0 (Next), new slide comes from Right.
-    // If increment < 0 (Prev), new slide comes from Left.
     setDirection(increment > 0 ? 'right' : 'left');
-
     setMonth(newMonth);
     setYear(newYear);
   };
@@ -140,24 +200,22 @@ const App: React.FC = () => {
 
   const saveEvent = async (event: CalendarEvent) => {
     if (!user) return;
-    
     try {
       if (editingEvent) {
-        // Update
         const eventRef = doc(db, 'events', event.id);
         await updateDoc(eventRef, {
           title: event.title,
           description: event.description,
           color: event.color,
-          date: event.date
+          date: event.date,
+          completed: event.completed ?? false
         });
       } else {
-        // Create
-        // Remove ID from object before saving, let Firestore generate it
         const { id, ...eventData } = event;
         await addDoc(collection(db, 'events'), {
           ...eventData,
-          userId: user.uid
+          userId: user.uid,
+          completed: eventData.completed ?? false
         });
       }
     } catch (e) {
@@ -237,6 +295,23 @@ const App: React.FC = () => {
                    <span className="hidden sm:inline">설치</span>
                  </button>
                )}
+
+               <button
+                 onClick={requestNotificationPermission}
+                 className={`p-2 rounded-lg transition-colors relative ${
+                   notificationPermission === 'granted' 
+                     ? 'text-yellow-500 hover:bg-yellow-50' 
+                     : 'text-slate-400 hover:bg-slate-100'
+                 }`}
+                 title={notificationPermission === 'granted' ? '내일 일정 알림 켜짐' : '알림 켜기'}
+               >
+                 <svg className="w-5 h-5" fill={notificationPermission === 'granted' ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                 </svg>
+                 {notificationPermission === 'denied' && (
+                   <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                 )}
+               </button>
 
                <button
                 onClick={handleShare}

@@ -93,8 +93,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          // Add version query to force update
-          navigator.serviceWorker.register('./service-worker.js?v=4')
+          navigator.serviceWorker.register('./service-worker.js')
             .then((registration) => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
             }, (err) => {

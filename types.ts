@@ -6,6 +6,7 @@ export interface CalendarEvent {
   type: 'holiday' | 'personal';
   color?: string; // Tailwind color class or hex
   description?: string;
+  completed?: boolean; // Progress/Completion status
 }
 
 export interface WeatherInfo {
