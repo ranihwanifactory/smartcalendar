@@ -29,14 +29,6 @@ export interface DayInfo {
 
 export type ViewMode = 'month' | 'year';
 
-export type ThemeMode = 'light' | 'dark';
-export type AccentColor = 'indigo' | 'rose' | 'teal' | 'amber' | 'slate';
-
-export interface AppTheme {
-  mode: ThemeMode;
-  accent: AccentColor;
-}
-
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
