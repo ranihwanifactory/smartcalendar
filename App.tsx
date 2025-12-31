@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Calendar from './components/Calendar';
 import EventModal from './components/EventModal';
@@ -5,6 +6,7 @@ import DayDetailModal from './components/DayDetailModal';
 import AIAssistant from './components/AIAssistant';
 import AuthModal from './components/AuthModal';
 import IntroScreen from './components/IntroScreen';
+import MonthlySummaryModal from './components/MonthlySummaryModal';
 import { CalendarEvent, WeatherInfo } from './types';
 import { MONTH_NAMES, getHolidays } from './constants';
 import { auth, db } from './firebase';
@@ -27,6 +29,7 @@ const App: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
@@ -40,7 +43,6 @@ const App: React.FC = () => {
       setIsAuthLoading(false);
     });
 
-    // Intro duration logic
     const timer = setTimeout(() => {
       setShowIntro(false);
     }, 3200);
@@ -234,11 +236,25 @@ const App: React.FC = () => {
                    <button onClick={requestNotificationPermission} className={`p-2 rounded-lg transition-colors ${notificationPermission === 'granted' ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:bg-slate-100'}`}>
                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                    </button>
+                   
                    {!user ? (
                      <button onClick={() => setIsAuthModalOpen(true)} className="px-4 py-2 text-sm font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md shadow-blue-100">로그인</button>
                    ) : (
                      <button onClick={() => signOut(auth)} className="px-4 py-2 text-sm font-bold bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 transition-all">로그아웃</button>
                    )}
+
+                   <div className="h-8 w-[1px] bg-slate-200 mx-1"></div>
+
+                   <button 
+                     onClick={() => setIsSummaryOpen(true)}
+                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 transition-all shadow-sm"
+                   >
+                     <svg className="w-4 h-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                     </svg>
+                     <span>요약</span>
+                   </button>
+
                    <button 
                      onClick={() => setIsAIOpen(!isAIOpen)} 
                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${isAIOpen ? 'bg-slate-800 text-white shadow-lg shadow-slate-200' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'}`}
@@ -255,6 +271,15 @@ const App: React.FC = () => {
             currentDateContext={`${year}년 ${MONTH_NAMES[month]}`} 
             isOpen={isAIOpen} 
             onClose={() => setIsAIOpen(false)} 
+          />
+
+          <MonthlySummaryModal 
+            isOpen={isSummaryOpen}
+            onClose={() => setIsSummaryOpen(false)}
+            year={year}
+            month={month}
+            monthName={MONTH_NAMES[month]}
+            events={personalEvents}
           />
 
           <DayDetailModal 

@@ -1,4 +1,6 @@
+
 import { GoogleGenAI } from "@google/genai";
+import { CalendarEvent } from "../types";
 
 const apiKey = process.env.API_KEY || '';
 
@@ -32,5 +34,36 @@ export const generatePlan = async (prompt: string, contextDate: string): Promise
   } catch (error) {
     console.error("Gemini API Error:", error);
     return "요청을 처리하는 중에 오류가 발생했습니다.";
+  }
+};
+
+export const generateMonthlySummary = async (events: CalendarEvent[], monthName: string): Promise<string> => {
+  if (!apiKey) return "API 키가 필요합니다.";
+  
+  const eventList = events.map(e => `- ${e.startDate}${e.startDate !== e.endDate ? ` ~ ${e.endDate}` : ''}: ${e.title} (${e.completed ? '완료' : '진행중'})`).join('\n');
+  
+  const prompt = `
+    다음은 사용자의 ${monthName} 일정 목록입니다:
+    ${eventList || '등록된 일정이 없습니다.'}
+    
+    이 일정들을 분석하여 다음 내용을 포함한 짧고 친절한 브리핑을 작성해주세요:
+    1. 이번 달의 전체적인 바쁨 정도 (상/중/하)
+    2. 가장 일정이 몰려있는 시기나 중요한 특징
+    3. 생산성을 높이기 위한 조언이나 격려의 말
+    
+    답변은 한국어로, 친근한 말투(~해요)를 사용해 마크다운 형식으로 작성해주세요.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        temperature: 0.6,
+      }
+    });
+    return response.text || "브리핑을 생성할 수 없습니다.";
+  } catch (error) {
+    return "AI 브리핑 생성 중 오류가 발생했습니다.";
   }
 };
