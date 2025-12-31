@@ -235,7 +235,7 @@ const Calendar: React.FC<CalendarProps> = ({
                     
                     return (
                       <div 
-                        key={event.id}
+                        key={`${day.dateString}-${event.id}`}
                         onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
                         className={`text-[9px] md:text-[10px] lg:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded-md border truncate font-medium flex items-center gap-1 transition-all hover:scale-[1.02] shadow-sm
                           ${event.completed ? 'opacity-60 grayscale-[0.5]' : ''}
@@ -247,7 +247,7 @@ const Calendar: React.FC<CalendarProps> = ({
                       >
                         {isStart && (event.completed ? '✓' : '•')}
                         <span className={event.completed ? 'line-through' : ''}>
-                          {(isStart || day.date.getDay() === 0) ? event.title : ''}
+                          {event.title}
                         </span>
                       </div>
                     );
