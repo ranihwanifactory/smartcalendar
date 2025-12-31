@@ -136,9 +136,21 @@ const Calendar: React.FC<CalendarProps> = ({
         .animate-slideInLeft {
           animation: slideInLeft 0.3s ease-out forwards;
         }
+        @media print {
+          .print-title {
+            display: block !important;
+          }
+        }
       `}</style>
 
-      {/* Header */}
+      {/* Print-only Title Header */}
+      <div className="hidden print-title w-full text-center py-6 border-b-2 border-slate-300 mb-2">
+        <h1 className="text-4xl font-black text-black tracking-tight">
+          {year}년 {MONTH_NAMES[month]}
+        </h1>
+      </div>
+
+      {/* Screen Header (Hidden on Print) */}
       <div className="px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row items-center justify-between bg-white border-b border-slate-200 no-print gap-3 md:gap-0 z-20 shadow-sm">
         <div className="flex items-center justify-between w-full md:w-auto md:gap-6">
           <div key={`${year}-${month}`} className={animationClass}>
