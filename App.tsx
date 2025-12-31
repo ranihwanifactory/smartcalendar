@@ -9,7 +9,7 @@ import { MONTH_NAMES, getHolidays } from './constants';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
-import { getCurrentLocation, fetchWeatherForecast } from './services/weatherService';
+import { getCurrentLocation, fetchWeatherForecast, DEFAULT_LOCATION } from './services/weatherService';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,13 +44,20 @@ const App: React.FC = () => {
     if ('Notification' in window) {
       setNotificationPermission(Notification.permission);
     }
+    
     const initWeather = async () => {
+      let location = DEFAULT_LOCATION;
       try {
-        const { lat, lon } = await getCurrentLocation();
-        const forecast = await fetchWeatherForecast(lat, lon);
+        location = await getCurrentLocation();
+      } catch (e) {
+        console.warn("Geolocation denied or failed, using default location (Seoul):", e);
+      }
+      
+      try {
+        const forecast = await fetchWeatherForecast(location.lat, location.lon);
         setWeatherData(forecast);
       } catch (e) {
-        console.log("Weather error:", e);
+        console.error("Weather fetch failed entirely:", e);
       }
     };
     initWeather();
@@ -146,14 +153,16 @@ const App: React.FC = () => {
           color: event.color,
           startDate: event.startDate,
           endDate: event.endDate,
-          completed: event.completed ?? false
+          completed: event.completed ?? false,
+          excludeWeekends: event.excludeWeekends ?? false
         });
       } else {
         const { id, ...eventData } = event;
         await addDoc(collection(db, 'events'), {
           ...eventData,
           userId: user.uid,
-          completed: eventData.completed ?? false
+          completed: eventData.completed ?? false,
+          excludeWeekends: eventData.excludeWeekends ?? false
         });
       }
     } catch (e) {
@@ -162,7 +171,15 @@ const App: React.FC = () => {
   };
 
   const dayEvents = useMemo(() => {
-    return personalEvents.filter(e => selectedDate >= e.startDate && selectedDate <= e.endDate);
+    return personalEvents.filter(e => {
+      const withinRange = selectedDate >= e.startDate && selectedDate <= e.endDate;
+      if (!withinRange) return false;
+      if (e.excludeWeekends) {
+        const d = new Date(selectedDate).getDay();
+        return d !== 0 && d !== 6;
+      }
+      return true;
+    });
   }, [personalEvents, selectedDate]);
 
   const dayHoliday = useMemo(() => {
@@ -178,6 +195,7 @@ const App: React.FC = () => {
           year={year} 
           month={month} 
           events={personalEvents} 
+          weatherData={weatherData}
           direction={direction}
           onMonthChange={handleMonthChange}
           onDayClick={handleDayClick}

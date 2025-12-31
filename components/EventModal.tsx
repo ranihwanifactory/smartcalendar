@@ -20,6 +20,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const [endDate, setEndDate] = useState('');
   const [colorIdx, setColorIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [excludeWeekends, setExcludeWeekends] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -31,6 +32,7 @@ const EventModal: React.FC<EventModalProps> = ({
         const idx = EVENT_COLORS.findIndex(c => c.value === existingEvent.color);
         setColorIdx(idx >= 0 ? idx : 0);
         setCompleted(existingEvent.completed || false);
+        setExcludeWeekends(existingEvent.excludeWeekends || false);
       } else {
         setTitle('');
         setDescription('');
@@ -38,11 +40,14 @@ const EventModal: React.FC<EventModalProps> = ({
         setEndDate(selectedDate);
         setColorIdx(0);
         setCompleted(false);
+        setExcludeWeekends(false);
       }
     }
   }, [isOpen, existingEvent, selectedDate]);
 
   if (!isOpen) return null;
+
+  const isRange = startDate !== endDate;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,13 +67,14 @@ const EventModal: React.FC<EventModalProps> = ({
       type: 'personal',
       color: EVENT_COLORS[colorIdx].value,
       completed: completed,
+      excludeWeekends: isRange ? excludeWeekends : false,
     });
     onClose();
   };
 
   const handleShareEvent = async () => {
     const statusText = completed ? '[완료]' : '[진행중]';
-    const dateRange = startDate === endDate ? startDate : `${startDate} ~ ${endDate}`;
+    const dateRange = startDate === endDate ? startDate : `${startDate} ~ ${endDate}${excludeWeekends ? ' (주말 제외)' : ''}`;
     const text = `${statusText} 일정 안내\n기간: ${dateRange}\n제목: ${title}${description ? `\n설명: ${description}` : ''}\n\n2026 스마트 달력에서 확인하세요!`;
     
     if (navigator.share) {
@@ -140,6 +146,24 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
           </div>
+
+          {isRange && (
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-slate-700">주말 제외</span>
+                <span className="text-xs text-slate-500">토요일과 일요일을 일정에서 뺍니다.</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={excludeWeekends}
+                  onChange={(e) => setExcludeWeekends(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+          )}
 
           <div className="flex justify-end pt-1">
             {existingEvent && (

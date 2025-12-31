@@ -1,3 +1,5 @@
+export const DEFAULT_LOCATION = { lat: 37.5665, lon: 126.9780 }; // Seoul
+
 export const getCurrentLocation = (): Promise<{ lat: number; lon: number }> => {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -10,9 +12,10 @@ export const getCurrentLocation = (): Promise<{ lat: number; lon: number }> => {
             lon: position.coords.longitude,
           });
         },
-        () => {
-          reject(new Error('Unable to retrieve your location'));
-        }
+        (error) => {
+          reject(new Error(error.message || 'Unable to retrieve your location'));
+        },
+        { timeout: 5000 }
       );
     }
   });
@@ -36,8 +39,14 @@ export const getWeatherIcon = (code: number): string => {
 export const fetchWeatherForecast = async (lat: number, lon: number) => {
   try {
     const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`,
+      { mode: 'cors' }
     );
+    
+    if (!response.ok) {
+      throw new Error(`Weather API returned status: ${response.status}`);
+    }
+
     const data = await response.json();
     
     // Transform data into a map: "YYYY-MM-DD" -> WeatherInfo
@@ -56,7 +65,7 @@ export const fetchWeatherForecast = async (lat: number, lon: number) => {
     
     return weatherMap;
   } catch (error) {
-    console.error("Failed to fetch weather:", error);
+    console.warn("Failed to fetch weather forecast:", error);
     return {};
   }
 };

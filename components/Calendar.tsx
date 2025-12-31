@@ -1,12 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { CalendarEvent, DayInfo, WeatherInfo } from '../types';
 import { getHolidays, WEEKDAYS, MONTH_NAMES } from '../constants';
-import { getCurrentLocation, fetchWeatherForecast } from '../services/weatherService';
 
 interface CalendarProps {
   year: number;
   month: number; // 0-11
   events: CalendarEvent[];
+  weatherData: Record<string, WeatherInfo>;
   direction?: 'left' | 'right' | 'none'; 
   onMonthChange: (increment: number) => void;
   onDayClick: (dateStr: string) => void;
@@ -15,24 +15,10 @@ interface CalendarProps {
 }
 
 const Calendar: React.FC<CalendarProps> = ({ 
-  year, month, events, direction = 'none', onMonthChange, onDayClick, onEventClick, headerRightContent
+  year, month, events, weatherData, direction = 'none', onMonthChange, onDayClick, onEventClick, headerRightContent
 }) => {
   const [calendarDays, setCalendarDays] = useState<DayInfo[]>([]);
-  const [weatherData, setWeatherData] = useState<Record<string, WeatherInfo>>({});
   const holidays = useMemo(() => getHolidays(year), [year]);
-
-  useEffect(() => {
-    const initWeather = async () => {
-      try {
-        const { lat, lon } = await getCurrentLocation();
-        const forecast = await fetchWeatherForecast(lat, lon);
-        setWeatherData(forecast);
-      } catch (e) {
-        console.log("Weather error:", e);
-      }
-    };
-    initWeather();
-  }, []);
 
   useEffect(() => {
     const getCalendarDays = (): DayInfo[] => {
@@ -99,10 +85,21 @@ const Calendar: React.FC<CalendarProps> = ({
     return calendarDays.map(day => {
       // Find holiday
       const holiday = holidays.find(h => h.startDate === day.dateString);
+      
       // Find personal events that occur on this day
       const dayEvents = events.filter(e => {
-        return day.dateString >= e.startDate && day.dateString <= e.endDate;
+        const withinRange = day.dateString >= e.startDate && day.dateString <= e.endDate;
+        if (!withinRange) return false;
+        
+        // If excludeWeekends is true, hide on SAT(6) and SUN(0)
+        if (e.excludeWeekends) {
+          const dayOfWeek = day.date.getDay();
+          return dayOfWeek !== 0 && dayOfWeek !== 6;
+        }
+        
+        return true;
       });
+      
       // Find weather
       const weather = weatherData[day.dateString];
       

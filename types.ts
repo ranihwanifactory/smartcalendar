@@ -8,6 +8,7 @@ export interface CalendarEvent {
   color?: string;
   description?: string;
   completed?: boolean;
+  excludeWeekends?: boolean;
 }
 
 export interface WeatherInfo {
