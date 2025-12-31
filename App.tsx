@@ -29,7 +29,6 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  const [isInstallable, setIsInstallable] = useState(false);
 
   const holidays = useMemo(() => getHolidays(year), [year]);
 
@@ -132,16 +131,8 @@ const App: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleToggleComplete = async (event: CalendarEvent) => {
-    if (!user) return;
-    try {
-      const eventRef = doc(db, 'events', event.id);
-      await updateDoc(eventRef, {
-        completed: !event.completed
-      });
-    } catch (e) {
-      console.error("Toggle complete error:", e);
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   const saveEvent = async (event: CalendarEvent) => {
@@ -170,11 +161,6 @@ const App: React.FC = () => {
     }
   };
 
-  const deleteEvent = async (id: string) => {
-    if (!user) return;
-    await deleteDoc(doc(db, 'events', id));
-  };
-
   const dayEvents = useMemo(() => {
     return personalEvents.filter(e => selectedDate >= e.startDate && selectedDate <= e.endDate);
   }, [personalEvents, selectedDate]);
@@ -198,6 +184,15 @@ const App: React.FC = () => {
           onEventClick={handleEditEvent}
           headerRightContent={
             <div className="flex items-center gap-2 no-print">
+               <button 
+                onClick={handlePrint}
+                className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                title="인쇄"
+               >
+                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                 </svg>
+               </button>
                <button onClick={requestNotificationPermission} className={`p-2 rounded-lg transition-colors ${notificationPermission === 'granted' ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:bg-slate-100'}`}>
                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                </button>
@@ -224,7 +219,6 @@ const App: React.FC = () => {
         onClose={() => setIsAIOpen(false)} 
       />
 
-      {/* Day Detail View */}
       <DayDetailModal 
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
@@ -234,16 +228,18 @@ const App: React.FC = () => {
         weather={weatherData[selectedDate]}
         onAddEvent={handleAddEventInDetail}
         onEditEvent={handleEditEvent}
-        onToggleComplete={handleToggleComplete}
+        onToggleComplete={async (event) => {
+          const eventRef = doc(db, 'events', event.id);
+          await updateDoc(eventRef, { completed: !event.completed });
+        }}
       />
 
-      {/* Add/Edit Modal */}
       <EventModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         selectedDate={selectedDate} 
         onSave={saveEvent} 
-        onDelete={deleteEvent} 
+        onDelete={(id) => deleteDoc(doc(db, 'events', id))} 
         existingEvent={editingEvent} 
       />
 

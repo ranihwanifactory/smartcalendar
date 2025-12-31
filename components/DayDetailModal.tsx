@@ -31,19 +31,58 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({
   const dayName = WEEKDAYS[date.getDay()];
   const displayDate = `${date.getMonth() + 1}월 ${date.getDate()}일 (${dayName})`;
 
+  const handleShareDay = async () => {
+    const holidayText = holiday ? `\n🚩 공휴일: ${holiday.title}` : '';
+    const weatherText = weather ? `\n⛅ 날씨: ${weather.icon} ${Math.round(weather.minTemp)}°/${Math.round(weather.maxTemp)}°` : '';
+    const eventItems = events.map(e => `${e.completed ? '✅' : '•'} ${e.title}`).join('\n');
+    const eventText = events.length > 0 ? `\n📅 일정:\n${eventItems}` : '\n일정 없음';
+    
+    const shareText = `[2026 스마트 달력] ${displayDate} 정보${weatherText}${holidayText}${eventText}\n\n스마트한 일정 관리, 지금 바로 확인하세요!`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${displayDate} 일정`,
+          text: shareText,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.log('Error sharing', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        alert('내용이 클립보드에 복사되었습니다.');
+      } catch (err) {
+        alert('공유 기능을 지원하지 않는 브라우저입니다.');
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 no-print">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
         {/* Header Section with Weather */}
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 p-6 text-white relative">
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-full transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <button 
+              onClick={handleShareDay}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              title="오늘 소식 공유"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
           
           <div className="flex justify-between items-end">
             <div>
@@ -84,10 +123,10 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({
 
             {/* Personal Events List */}
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-slate-500 px-1">개인 일정 ({events.length})</h3>
+              <h3 className="text-sm font-bold text-slate-500 px-1">일정 목록 ({events.length})</h3>
               {events.length === 0 ? (
                 <div className="text-center py-8 bg-white rounded-2xl border border-dashed border-slate-300">
-                  <p className="text-slate-400 text-sm">일정이 없습니다.</p>
+                  <p className="text-slate-400 text-sm">기록된 일정이 없습니다.</p>
                 </div>
               ) : (
                 events.map(event => (
@@ -139,7 +178,7 @@ const DayDetailModal: React.FC<DayDetailModalProps> = ({
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path d="M12 4v16m8-8H4" />
             </svg>
-            새로운 일정 추가
+            일정 추가하기
           </button>
         </div>
       </div>

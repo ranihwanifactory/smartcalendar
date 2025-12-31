@@ -1,16 +1,16 @@
-
 import { GoogleGenAI } from "@google/genai";
 
-// Fix: Follow @google/genai guidelines: Use process.env.API_KEY directly and use gemini-3-flash-preview
+const apiKey = process.env.API_KEY || '';
+
+const ai = new GoogleGenAI({ apiKey });
+
 export const generatePlan = async (prompt: string, contextDate: string): Promise<string> => {
-  if (!process.env.API_KEY) {
+  if (!apiKey) {
     return "API Key가 설정되지 않았습니다. 환경 변수를 확인해주세요.";
   }
 
   try {
-    // Initialize GoogleGenAI right before making an API call
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const model = 'gemini-3-flash-preview';
+    const model = 'gemini-2.5-flash';
     const systemInstruction = `
       당신은 2026년 달력 앱의 친절하고 유능한 AI 비서입니다.
       사용자의 일정 계획, 휴일 여행 추천, 기념일 축하 메시지 작성 등을 도와줍니다.
@@ -28,7 +28,6 @@ export const generatePlan = async (prompt: string, contextDate: string): Promise
       }
     });
 
-    // Extract text from GenerateContentResponse
     return response.text || "죄송합니다. 답변을 생성할 수 없습니다.";
   } catch (error) {
     console.error("Gemini API Error:", error);

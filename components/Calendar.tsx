@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { CalendarEvent, DayInfo, WeatherInfo } from '../types';
 import { getHolidays, WEEKDAYS, MONTH_NAMES } from '../constants';
@@ -6,9 +5,9 @@ import { getCurrentLocation, fetchWeatherForecast } from '../services/weatherSer
 
 interface CalendarProps {
   year: number;
-  month: number;
+  month: number; // 0-11
   events: CalendarEvent[];
-  direction?: 'left' | 'right' | 'none';
+  direction?: 'left' | 'right' | 'none'; 
   onMonthChange: (increment: number) => void;
   onDayClick: (dateStr: string) => void;
   onEventClick: (event: CalendarEvent) => void;
@@ -98,19 +97,18 @@ const Calendar: React.FC<CalendarProps> = ({
 
   const daysWithEvents = useMemo(() => {
     return calendarDays.map(day => {
-      // Fix: Use startDate and remove unnecessary type casting
+      // Find holiday
       const holiday = holidays.find(h => h.startDate === day.dateString);
-      
-      // Personal events: day.dateString must be BETWEEN startDate and endDate
+      // Find personal events that occur on this day
       const dayEvents = events.filter(e => {
         return day.dateString >= e.startDate && day.dateString <= e.endDate;
       });
-      
+      // Find weather
       const weather = weatherData[day.dateString];
       
       return {
         ...day,
-        holiday: holiday as CalendarEvent,
+        holiday,
         weather,
         events: dayEvents
       };
@@ -163,12 +161,13 @@ const Calendar: React.FC<CalendarProps> = ({
             </button>
           </div>
         </div>
+        
         <div className="w-full md:w-auto flex justify-end">
           {headerRightContent}
         </div>
       </div>
       
-      {/* Weekdays */}
+      {/* Weekday Headers */}
       <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50 z-10">
         {WEEKDAYS.map((day, idx) => (
           <div key={day} className={`py-2 md:py-3 text-center text-xs md:text-sm font-semibold ${idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-slate-500'}`}>
@@ -192,7 +191,7 @@ const Calendar: React.FC<CalendarProps> = ({
                   ${day.isToday ? 'bg-blue-50/50' : ''}`}
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start mb-1 gap-0.5">
-                  <span className={`text-xs md:text-sm font-medium w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full
+                  <span className={`text-xs md:text-sm font-medium w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full flex-shrink-0
                     ${day.isToday ? 'bg-blue-600 text-white shadow-md' : ''}
                     ${!day.isToday && isRedDay ? 'text-red-500' : ''}
                     ${!day.isToday && day.date.getDay() === 6 && !day.holiday ? 'text-blue-500' : ''}
@@ -203,14 +202,14 @@ const Calendar: React.FC<CalendarProps> = ({
                   
                   <div className="flex flex-col items-start sm:items-end w-full sm:w-auto gap-0.5 overflow-hidden">
                     {day.holiday && (
-                       <span className="text-[9px] sm:text-xs font-medium text-red-500 truncate bg-red-50 px-1 rounded leading-tight">
+                       <span className="text-[10px] sm:text-xs font-medium text-red-500 truncate bg-red-50 px-1 rounded leading-tight">
                          {day.holiday.title}
                        </span>
                     )}
                     {day.weather && (
-                      <div className="flex items-center gap-0.5 text-[9px] text-slate-500">
+                      <div className="flex items-center gap-0.5 text-[10px] text-slate-600">
                         <span>{day.weather.icon}</span>
-                        <span className="hidden md:inline">{Math.round(day.weather.maxTemp)}°</span>
+                        <span className="font-medium hidden md:inline">{Math.round(day.weather.maxTemp)}°</span>
                       </div>
                     )}
                   </div>
@@ -226,9 +225,8 @@ const Calendar: React.FC<CalendarProps> = ({
                       <div 
                         key={event.id}
                         onClick={(e) => { e.stopPropagation(); onEventClick(event); }}
-                        className={`text-[9px] md:text-[10px] lg:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded-md border truncate font-medium
-                          flex items-center gap-1 transition-all hover:brightness-95
-                          ${event.completed ? 'opacity-50 line-through' : ''}
+                        className={`text-[9px] md:text-[10px] lg:text-xs px-1 md:px-2 py-0.5 md:py-1 rounded-md border truncate font-medium flex items-center gap-1 transition-all hover:scale-[1.02] shadow-sm
+                          ${event.completed ? 'opacity-60 grayscale-[0.5]' : ''}
                           ${event.color || 'bg-slate-100 text-slate-700 border-slate-200'}
                           ${isRange ? 'rounded-none border-x-0' : ''}
                           ${isStart ? 'rounded-l-md border-l' : ''}
@@ -236,8 +234,9 @@ const Calendar: React.FC<CalendarProps> = ({
                         `}
                       >
                         {isStart && (event.completed ? '✓' : '•')}
-                        <span>{isStart || day.date.getDay() === 0 ? event.title : ''}</span>
-                        {!isStart && !isEnd && <div className="h-0.5 w-full bg-current opacity-20"></div>}
+                        <span className={event.completed ? 'line-through' : ''}>
+                          {(isStart || day.date.getDay() === 0) ? event.title : ''}
+                        </span>
                       </div>
                     );
                   })}

@@ -47,6 +47,7 @@ const EventModal: React.FC<EventModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+
     if (new Date(startDate) > new Date(endDate)) {
       alert('종료일은 시작일보다 빠를 수 없습니다.');
       return;
@@ -121,7 +122,7 @@ const EventModal: React.FC<EventModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">시작일</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">시작일</label>
               <input 
                 type="date"
                 value={startDate}
@@ -130,7 +131,7 @@ const EventModal: React.FC<EventModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">종료일</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">종료일</label>
               <input 
                 type="date"
                 value={endDate}
@@ -140,10 +141,7 @@ const EventModal: React.FC<EventModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-2">
-            <span className="text-xs text-slate-400">
-              {startDate === endDate ? '하루 일정' : '기간 일정'}
-            </span>
+          <div className="flex justify-end pt-1">
             {existingEvent && (
               <label className="flex items-center gap-2 cursor-pointer group">
                 <div className="relative">
@@ -157,7 +155,7 @@ const EventModal: React.FC<EventModalProps> = ({
                   <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${completed ? 'translate-x-5' : 'translate-x-0'}`}></div>
                 </div>
                 <span className={`text-sm font-medium ${completed ? 'text-green-600' : 'text-slate-500'}`}>
-                  {completed ? '완료' : '진행중'}
+                  {completed ? '완료됨' : '진행중'}
                 </span>
               </label>
             )}
@@ -169,25 +167,25 @@ const EventModal: React.FC<EventModalProps> = ({
               type="text" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              placeholder="일정 제목"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="일정 제목을 입력하세요"
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">설명</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">설명 (선택)</label>
             <textarea 
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all resize-none"
-              rows={2}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+              rows={3}
               placeholder="상세 내용을 입력하세요"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">색상</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">색상 태그</label>
             <div className="flex gap-2 flex-wrap">
               {EVENT_COLORS.map((color, idx) => (
                 <button
@@ -197,6 +195,7 @@ const EventModal: React.FC<EventModalProps> = ({
                   className={`w-8 h-8 rounded-full border-2 transition-all ${color.value.split(' ')[0]} ${
                     colorIdx === idx ? 'border-slate-600 scale-110' : 'border-transparent hover:scale-105'
                   }`}
+                  aria-label={color.name}
                 />
               ))}
             </div>
@@ -214,7 +213,7 @@ const EventModal: React.FC<EventModalProps> = ({
             )}
             <button 
               type="submit"
-              className="flex-1 px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg"
+              className={`flex-1 px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 ${!existingEvent ? 'w-full' : ''}`}
             >
               저장
             </button>

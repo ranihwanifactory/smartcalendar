@@ -1,9 +1,7 @@
-
 import { CalendarEvent } from './types';
 
 // Specific 2026 Holidays (Lunar included)
 const HOLIDAYS_2026_SPECIFIC: CalendarEvent[] = [
-  // Fix: CalendarEvent interface requires startDate and endDate, not date
   { id: 'h2026-02-16', startDate: '2026-02-16', endDate: '2026-02-16', title: '설날 연휴', type: 'holiday', color: 'red' },
   { id: 'h2026-02-17', startDate: '2026-02-17', endDate: '2026-02-17', title: '설날', type: 'holiday', color: 'red' },
   { id: 'h2026-02-18', startDate: '2026-02-18', endDate: '2026-02-18', title: '설날 연휴', type: 'holiday', color: 'red' },
@@ -17,7 +15,6 @@ const HOLIDAYS_2026_SPECIFIC: CalendarEvent[] = [
 
 export const getHolidays = (year: number): CalendarEvent[] => {
   // Fixed Solar Holidays
-  // Fix: CalendarEvent interface requires startDate and endDate, not date
   const fixedHolidays: CalendarEvent[] = [
     { id: `h${year}-01-01`, startDate: `${year}-01-01`, endDate: `${year}-01-01`, title: '신정', type: 'holiday', color: 'red' },
     { id: `h${year}-03-01`, startDate: `${year}-03-01`, endDate: `${year}-03-01`, title: '삼일절', type: 'holiday', color: 'red' },
@@ -33,7 +30,6 @@ export const getHolidays = (year: number): CalendarEvent[] => {
     return [...fixedHolidays, ...HOLIDAYS_2026_SPECIFIC];
   }
 
-  // NOTE: Lunar holidays for other years are not calculated here.
   return fixedHolidays;
 };
 
