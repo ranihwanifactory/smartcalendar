@@ -1,12 +1,13 @@
 export interface CalendarEvent {
   id: string;
-  userId?: string; // Added for Firebase ownership
-  date: string; // Format YYYY-MM-DD
+  userId?: string;
+  startDate: string; // Format YYYY-MM-DD
+  endDate: string;   // Format YYYY-MM-DD
   title: string;
   type: 'holiday' | 'personal';
-  color?: string; // Tailwind color class or hex
+  color?: string;
   description?: string;
-  completed?: boolean; // Progress/Completion status
+  completed?: boolean;
 }
 
 export interface WeatherInfo {
@@ -27,6 +28,14 @@ export interface DayInfo {
 }
 
 export type ViewMode = 'month' | 'year';
+
+export type ThemeMode = 'light' | 'dark';
+export type AccentColor = 'indigo' | 'rose' | 'teal' | 'amber' | 'slate';
+
+export interface AppTheme {
+  mode: ThemeMode;
+  accent: AccentColor;
+}
 
 export interface ChatMessage {
   role: 'user' | 'model';
