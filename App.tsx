@@ -154,7 +154,8 @@ const App: React.FC = () => {
           startDate: event.startDate,
           endDate: event.endDate,
           completed: event.completed ?? false,
-          excludeWeekends: event.excludeWeekends ?? false
+          excludeSaturday: event.excludeSaturday ?? false,
+          excludeSunday: event.excludeSunday ?? false
         });
       } else {
         const { id, ...eventData } = event;
@@ -162,7 +163,8 @@ const App: React.FC = () => {
           ...eventData,
           userId: user.uid,
           completed: eventData.completed ?? false,
-          excludeWeekends: eventData.excludeWeekends ?? false
+          excludeSaturday: eventData.excludeSaturday ?? false,
+          excludeSunday: eventData.excludeSunday ?? false
         });
       }
     } catch (e) {
@@ -174,10 +176,11 @@ const App: React.FC = () => {
     return personalEvents.filter(e => {
       const withinRange = selectedDate >= e.startDate && selectedDate <= e.endDate;
       if (!withinRange) return false;
-      if (e.excludeWeekends) {
-        const d = new Date(selectedDate).getDay();
-        return d !== 0 && d !== 6;
-      }
+      
+      const d = new Date(selectedDate).getDay();
+      if (e.excludeSaturday && d === 6) return false;
+      if (e.excludeSunday && d === 0) return false;
+      
       return true;
     });
   }, [personalEvents, selectedDate]);

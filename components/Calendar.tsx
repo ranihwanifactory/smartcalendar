@@ -91,11 +91,10 @@ const Calendar: React.FC<CalendarProps> = ({
         const withinRange = day.dateString >= e.startDate && day.dateString <= e.endDate;
         if (!withinRange) return false;
         
-        // If excludeWeekends is true, hide on SAT(6) and SUN(0)
-        if (e.excludeWeekends) {
-          const dayOfWeek = day.date.getDay();
-          return dayOfWeek !== 0 && dayOfWeek !== 6;
-        }
+        const dayOfWeek = day.date.getDay();
+        // Check individual exclusion flags
+        if (e.excludeSaturday && dayOfWeek === 6) return false;
+        if (e.excludeSunday && dayOfWeek === 0) return false;
         
         return true;
       });

@@ -20,7 +20,8 @@ const EventModal: React.FC<EventModalProps> = ({
   const [endDate, setEndDate] = useState('');
   const [colorIdx, setColorIdx] = useState(0);
   const [completed, setCompleted] = useState(false);
-  const [excludeWeekends, setExcludeWeekends] = useState(false);
+  const [excludeSaturday, setExcludeSaturday] = useState(false);
+  const [excludeSunday, setExcludeSunday] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,7 +33,8 @@ const EventModal: React.FC<EventModalProps> = ({
         const idx = EVENT_COLORS.findIndex(c => c.value === existingEvent.color);
         setColorIdx(idx >= 0 ? idx : 0);
         setCompleted(existingEvent.completed || false);
-        setExcludeWeekends(existingEvent.excludeWeekends || false);
+        setExcludeSaturday(existingEvent.excludeSaturday || false);
+        setExcludeSunday(existingEvent.excludeSunday || false);
       } else {
         setTitle('');
         setDescription('');
@@ -40,7 +42,8 @@ const EventModal: React.FC<EventModalProps> = ({
         setEndDate(selectedDate);
         setColorIdx(0);
         setCompleted(false);
-        setExcludeWeekends(false);
+        setExcludeSaturday(false);
+        setExcludeSunday(false);
       }
     }
   }, [isOpen, existingEvent, selectedDate]);
@@ -67,14 +70,20 @@ const EventModal: React.FC<EventModalProps> = ({
       type: 'personal',
       color: EVENT_COLORS[colorIdx].value,
       completed: completed,
-      excludeWeekends: isRange ? excludeWeekends : false,
+      excludeSaturday: isRange ? excludeSaturday : false,
+      excludeSunday: isRange ? excludeSunday : false,
     });
     onClose();
   };
 
   const handleShareEvent = async () => {
     const statusText = completed ? '[완료]' : '[진행중]';
-    const dateRange = startDate === endDate ? startDate : `${startDate} ~ ${endDate}${excludeWeekends ? ' (주말 제외)' : ''}`;
+    let exclusionText = '';
+    if (excludeSaturday && excludeSunday) exclusionText = ' (주말 제외)';
+    else if (excludeSaturday) exclusionText = ' (토요일 제외)';
+    else if (excludeSunday) exclusionText = ' (일요일 제외)';
+
+    const dateRange = startDate === endDate ? startDate : `${startDate} ~ ${endDate}${exclusionText}`;
     const text = `${statusText} 일정 안내\n기간: ${dateRange}\n제목: ${title}${description ? `\n설명: ${description}` : ''}\n\n2026 스마트 달력에서 확인하세요!`;
     
     if (navigator.share) {
@@ -148,20 +157,31 @@ const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           {isRange && (
-            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-slate-700">주말 제외</span>
-                <span className="text-xs text-slate-500">토요일과 일요일을 일정에서 뺍니다.</span>
+                <span className="text-sm font-semibold text-slate-700">특정 요일 제외 설정</span>
+                <span className="text-xs text-slate-500">선택한 요일은 달력 일정에서 나타나지 않습니다.</span>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={excludeWeekends}
-                  onChange={(e) => setExcludeWeekends(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-              </label>
+              <div className="flex gap-4">
+                <label className="flex-1 flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-blue-300 transition-colors">
+                  <span className={`text-xs font-bold ${excludeSaturday ? 'text-blue-600' : 'text-slate-400'}`}>토요일 제외</span>
+                  <input 
+                    type="checkbox" 
+                    checked={excludeSaturday}
+                    onChange={(e) => setExcludeSaturday(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                </label>
+                <label className="flex-1 flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200 cursor-pointer hover:border-red-300 transition-colors">
+                  <span className={`text-xs font-bold ${excludeSunday ? 'text-red-600' : 'text-slate-400'}`}>일요일 제외</span>
+                  <input 
+                    type="checkbox" 
+                    checked={excludeSunday}
+                    onChange={(e) => setExcludeSunday(e.target.checked)}
+                    className="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500 cursor-pointer"
+                  />
+                </label>
+              </div>
             </div>
           )}
 
