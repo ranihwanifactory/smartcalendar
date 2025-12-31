@@ -12,6 +12,13 @@ export interface CalendarEvent {
   excludeSunday?: boolean;
 }
 
+export interface NotificationSettings {
+  advanceDays: number; // 0 (day of), 1, 3, 7
+  notifyHolidays: boolean;
+  notifyPersonal: boolean;
+  enabled: boolean;
+}
+
 export interface WeatherInfo {
   maxTemp: number;
   minTemp: number;

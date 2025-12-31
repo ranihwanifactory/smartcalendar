@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import Calendar from './components/Calendar';
 import EventModal from './components/EventModal';
@@ -7,12 +6,20 @@ import AIAssistant from './components/AIAssistant';
 import AuthModal from './components/AuthModal';
 import IntroScreen from './components/IntroScreen';
 import MonthlySummaryModal from './components/MonthlySummaryModal';
-import { CalendarEvent, WeatherInfo } from './types';
+import NotificationSettingsModal from './components/NotificationSettingsModal';
+import { CalendarEvent, WeatherInfo, NotificationSettings } from './types';
 import { MONTH_NAMES, getHolidays } from './constants';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, updateDoc, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getCurrentLocation, fetchWeatherForecast, DEFAULT_LOCATION } from './services/weatherService';
+
+const DEFAULT_NOTIF_SETTINGS: NotificationSettings = {
+  advanceDays: 1,
+  notifyHolidays: true,
+  notifyPersonal: true,
+  enabled: true
+};
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -30,17 +37,30 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isNotifSettingsOpen, setIsNotifSettingsOpen] = useState(false);
   
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIF_SETTINGS);
 
   const holidays = useMemo(() => getHolidays(year), [year]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setIsAuthLoading(false);
+      
+      if (currentUser) {
+        // Fetch personalized settings
+        const settingsRef = doc(db, 'settings', currentUser.uid);
+        const settingsSnap = await getDoc(settingsRef);
+        if (settingsSnap.exists()) {
+          setNotifSettings(settingsSnap.data() as NotificationSettings);
+        } else {
+          await setDoc(settingsRef, DEFAULT_NOTIF_SETTINGS);
+        }
+      }
     });
 
     const timer = setTimeout(() => {
@@ -91,31 +111,66 @@ const App: React.FC = () => {
       checkAndNotifyUpcomingEvents(eventsData);
     });
     return () => unsubscribe();
-  }, [user]);
+  }, [user, notifSettings]); // Depend on notifSettings to re-check when settings change
 
   const requestNotificationPermission = async () => {
     if (!('Notification' in window)) return;
     const permission = await Notification.requestPermission();
     setNotificationPermission(permission);
+    if (permission === 'granted') {
+      setIsNotifSettingsOpen(true);
+    }
+  };
+
+  const handleToggleNotifButton = () => {
+    if (notificationPermission !== 'granted') {
+      requestNotificationPermission();
+    } else {
+      setIsNotifSettingsOpen(true);
+    }
   };
 
   const checkAndNotifyUpcomingEvents = (events: CalendarEvent[]) => {
-    if (Notification.permission !== 'granted') return;
+    if (Notification.permission !== 'granted' || !notifSettings.enabled) return;
+    
     const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() + notifSettings.advanceDays);
+    const targetDateStr = targetDate.toISOString().split('T')[0];
 
-    const storageKey = `notified_for_${tomorrowStr}`;
+    // Avoid multiple notifications for the same target date in one session
+    const storageKey = `notified_for_${targetDateStr}_adv${notifSettings.advanceDays}`;
     if (localStorage.getItem(storageKey) === 'true') return;
 
-    const upcomingEvents = events.filter(e => e.startDate === tomorrowStr && e.type === 'personal');
-    if (upcomingEvents.length > 0) {
-      new Notification('내일 시작되는 일정 알림', {
-        body: upcomingEvents.map(e => `- ${e.title}`).join('\n'),
+    let itemsToNotify: string[] = [];
+
+    // Check personal events
+    if (notifSettings.notifyPersonal) {
+      const personalToNotify = events.filter(e => e.startDate === targetDateStr && e.type === 'personal' && !e.completed);
+      itemsToNotify.push(...personalToNotify.map(e => `📅 ${e.title}`));
+    }
+
+    // Check holidays
+    if (notifSettings.notifyHolidays) {
+      const holidaysToNotify = holidays.filter(h => h.startDate === targetDateStr);
+      itemsToNotify.push(...holidaysToNotify.map(h => `🚩 ${h.title}`));
+    }
+
+    if (itemsToNotify.length > 0) {
+      const title = notifSettings.advanceDays === 0 ? '오늘의 일정 안내' : `${notifSettings.advanceDays}일 후 일정 안내`;
+      new Notification(title, {
+        body: itemsToNotify.join('\n'),
         icon: 'https://cdn-icons-png.flaticon.com/512/10691/10691802.png',
       });
       localStorage.setItem(storageKey, 'true');
+    }
+  };
+
+  const saveNotifSettings = async (newSettings: NotificationSettings) => {
+    setNotifSettings(newSettings);
+    if (user) {
+      const settingsRef = doc(db, 'settings', user.uid);
+      await setDoc(settingsRef, newSettings);
     }
   };
 
@@ -233,8 +288,14 @@ const App: React.FC = () => {
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                      </svg>
                    </button>
-                   <button onClick={requestNotificationPermission} className={`p-2 rounded-lg transition-colors ${notificationPermission === 'granted' ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:bg-slate-100'}`}>
-                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                   <button 
+                    onClick={handleToggleNotifButton} 
+                    className={`p-2 rounded-lg transition-colors ${notificationPermission === 'granted' && notifSettings.enabled ? 'text-yellow-500 bg-yellow-50' : 'text-slate-400 hover:bg-slate-100'}`}
+                    title="알림 설정"
+                   >
+                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                     </svg>
                    </button>
                    
                    {!user ? (
@@ -280,6 +341,14 @@ const App: React.FC = () => {
             month={month}
             monthName={MONTH_NAMES[month]}
             events={personalEvents}
+          />
+
+          <NotificationSettingsModal
+            isOpen={isNotifSettingsOpen}
+            onClose={() => setIsNotifSettingsOpen(false)}
+            settings={notifSettings}
+            onSave={saveNotifSettings}
+            permissionStatus={notificationPermission}
           />
 
           <DayDetailModal 
