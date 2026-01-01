@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '../types';
 import { EVENT_COLORS } from '../constants';
@@ -108,8 +109,8 @@ const EventModal: React.FC<EventModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
-        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 max-h-[90vh] flex flex-col">
+        <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center flex-shrink-0">
           <h3 className="text-lg font-bold text-slate-800">
             {existingEvent ? '일정 수정' : '새 일정 추가'}
           </h3>
@@ -134,7 +135,7 @@ const EventModal: React.FC<EventModalProps> = ({
           </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">시작일</label>
@@ -229,35 +230,42 @@ const EventModal: React.FC<EventModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">색상 태그</label>
-            <div className="flex gap-2 flex-wrap">
+            <label className="block text-sm font-medium text-slate-700 mb-3">색상 태그</label>
+            <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
               {EVENT_COLORS.map((color, idx) => (
                 <button
                   key={color.name}
                   type="button"
                   onClick={() => setColorIdx(idx)}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${color.value.split(' ')[0]} ${
-                    colorIdx === idx ? 'border-slate-600 scale-110' : 'border-transparent hover:scale-105'
+                  className={`w-full aspect-square rounded-xl border-2 transition-all flex items-center justify-center ${color.value.split(' ')[0]} ${
+                    colorIdx === idx ? 'border-slate-800 scale-110 shadow-md ring-2 ring-slate-200' : 'border-transparent hover:scale-105'
                   }`}
                   aria-label={color.name}
-                />
+                  title={color.name}
+                >
+                  {colorIdx === idx && (
+                    <svg className={`w-4 h-4 ${color.value.split(' ')[1]}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="pt-4 flex gap-3 flex-shrink-0">
             {existingEvent && (
               <button 
                 type="button"
                 onClick={() => { onDelete(existingEvent.id); onClose(); }}
-                className="flex-1 px-4 py-2 bg-red-50 text-red-600 font-medium rounded-lg hover:bg-red-100 transition-colors"
+                className="flex-1 px-4 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition-colors"
               >
                 삭제
               </button>
             )}
             <button 
               type="submit"
-              className={`flex-1 px-4 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 ${!existingEvent ? 'w-full' : ''}`}
+              className={`flex-1 px-4 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200 ${!existingEvent ? 'w-full' : ''}`}
             >
               저장
             </button>
